@@ -1,0 +1,11 @@
+name = "roomorganizer"
+main = "worker.ts"
+compatibility_date = "2026-02-13"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
+[vars]
+# Set GEMINI_API_KEY as a Worker secret instead of plain text vars:
+# wrangler secret put GEMINI_API_KEY

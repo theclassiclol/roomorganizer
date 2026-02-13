@@ -1,0 +1,7 @@
+{
+  "name": "RoomOrganizer",
+  "description": "Transform your chaotic spaces into sanctuaries. Upload photos of your rooms to get personalized, AI-powered organization and decluttering advice.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
