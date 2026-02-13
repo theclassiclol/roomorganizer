@@ -25,7 +25,11 @@ This project deploys as a Cloudflare Worker with static assets from `dist` and A
 - `POST /api/chat`
 
 Set your Gemini key as a Worker secret:
-`npx wrangler secret put GEMINI_API_KEY`
+`npx wrangler secret put GROQ_API_KEY`
+
+Default models are configured in `wrangler.toml` and can be changed:
+- `GROQ_CHAT_MODEL`
+- `GROQ_VISION_MODEL`
 
 Build and deploy:
 `npm run deploy`

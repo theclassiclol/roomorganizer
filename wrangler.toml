@@ -7,5 +7,8 @@ directory = "./dist"
 binding = "ASSETS"
 
 [vars]
-# Set GEMINI_API_KEY as a Worker secret instead of plain text vars:
-# wrangler secret put GEMINI_API_KEY
+# Optional model overrides:
+GROQ_CHAT_MODEL = "llama-3.3-70b-versatile"
+GROQ_VISION_MODEL = "llama-3.2-11b-vision-preview"
+# Set the API key as a Worker secret:
+# wrangler secret put GROQ_API_KEY

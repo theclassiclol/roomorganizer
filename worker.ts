@@ -1,5 +1,7 @@
 interface Env {
-  GEMINI_API_KEY: string;
+  GROQ_API_KEY: string;
+  GROQ_CHAT_MODEL?: string;
+  GROQ_VISION_MODEL?: string;
   ASSETS: {
     fetch: (request: Request) => Promise<Response>;
   };
@@ -10,8 +12,29 @@ interface ChatMessage {
   text: string;
 }
 
-const MODEL_NAME = 'gemini-2.0-flash';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent`;
+type GroqRole = 'system' | 'user' | 'assistant';
+
+interface GroqMessage {
+  role: GroqRole;
+  content:
+    | string
+    | Array<
+        | {
+            type: 'text';
+            text: string;
+          }
+        | {
+            type: 'image_url';
+            image_url: {
+              url: string;
+            };
+          }
+      >;
+}
+
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const DEFAULT_CHAT_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_VISION_MODEL = 'llama-3.2-11b-vision-preview';
 
 const ANALYZE_PROMPT = `You are a professional interior organizer and minimalist design expert.
 Analyze this image of a room.
@@ -34,36 +57,6 @@ const json = (body: unknown, status = 200) =>
     },
   });
 
-const readGeminiText = (payload: any): string => {
-  const parts = payload?.candidates?.[0]?.content?.parts;
-  if (!Array.isArray(parts)) {
-    return '';
-  }
-
-  return parts
-    .map((part: { text?: string }) => part?.text ?? '')
-    .join('')
-    .trim();
-};
-
-const callGemini = async (env: Env, body: unknown): Promise<string> => {
-  const response = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(env.GEMINI_API_KEY)}`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  const payload = await response.json<any>();
-
-  if (!response.ok) {
-    throw new Error(`Gemini error: ${response.status} ${JSON.stringify(payload)}`);
-  }
-
-  return readGeminiText(payload);
-};
-
 const extractInlineData = (imageBase64: string): { mimeType: string; data: string } | null => {
   const match = imageBase64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
   if (!match) {
@@ -74,6 +67,53 @@ const extractInlineData = (imageBase64: string): { mimeType: string; data: strin
     mimeType: match[1],
     data: match[2],
   };
+};
+
+const toDataUrl = (mimeType: string, data: string): string => `data:${mimeType};base64,${data}`;
+
+const readGroqText = (payload: any): string => {
+  const content = payload?.choices?.[0]?.message?.content;
+
+  if (typeof content === 'string') {
+    return content.trim();
+  }
+
+  if (Array.isArray(content)) {
+    return content
+      .map((item: { type?: string; text?: string }) => (item?.type === 'text' ? item.text ?? '' : ''))
+      .join('')
+      .trim();
+  }
+
+  return '';
+};
+
+const callGroq = async (env: Env, model: string, messages: GroqMessage[]): Promise<string> => {
+  if (!env.GROQ_API_KEY) {
+    throw new Error('Missing GROQ_API_KEY secret');
+  }
+
+  const response = await fetch(GROQ_API_URL, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${env.GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: 0.4,
+    }),
+  });
+
+  const payload = await response.json<any>();
+
+  if (!response.ok) {
+    const detail = payload?.error?.message ?? JSON.stringify(payload);
+    throw new Error(`Groq error: ${response.status} ${detail}`);
+  }
+
+  return readGroqText(payload);
 };
 
 const handleAnalyze = async (request: Request, env: Env): Promise<Response> => {
@@ -89,24 +129,28 @@ const handleAnalyze = async (request: Request, env: Env): Promise<Response> => {
     return json({ error: 'Invalid image data URL' }, 400);
   }
 
-  const text = await callGemini(env, {
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          {
-            inline_data: {
-              mime_type: inlineData.mimeType,
-              data: inlineData.data,
-            },
+  const model = env.GROQ_VISION_MODEL || DEFAULT_VISION_MODEL;
+  const text = await callGroq(env, model, [
+    {
+      role: 'system',
+      content: CHAT_SYSTEM_INSTRUCTION,
+    },
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: ANALYZE_PROMPT,
+        },
+        {
+          type: 'image_url',
+          image_url: {
+            url: toDataUrl(inlineData.mimeType, inlineData.data),
           },
-          {
-            text: ANALYZE_PROMPT,
-          },
-        ],
-      },
-    ],
-  });
+        },
+      ],
+    },
+  ]);
 
   return json({ text: text || "I couldn't generate an analysis for this image. Please try again." });
 };
@@ -119,32 +163,29 @@ const handleChat = async (request: Request, env: Env): Promise<Response> => {
     return json({ error: 'messages is required' }, 400);
   }
 
-  const contents = messages
+  const chatTurns: GroqMessage[] = messages
     .filter((msg) => msg && (msg.role === 'user' || msg.role === 'model') && typeof msg.text === 'string' && msg.text.trim())
     .map((msg) => ({
-      role: msg.role,
-      parts: [{ text: msg.text }],
+      role: msg.role === 'model' ? 'assistant' : 'user',
+      content: msg.text,
     }));
 
-  if (!contents.length) {
-    return json({ error: 'No valid messages provided' }, 400);
+  while (chatTurns.length > 0 && chatTurns[0].role !== 'user') {
+    chatTurns.shift();
   }
 
-  // Gemini expects a user turn to start the conversation.
-  while (contents.length > 0 && contents[0].role !== 'user') {
-    contents.shift();
-  }
-
-  if (!contents.length) {
+  if (!chatTurns.length) {
     return json({ error: 'Conversation must include a user message' }, 400);
   }
 
-  const text = await callGemini(env, {
-    system_instruction: {
-      parts: [{ text: CHAT_SYSTEM_INSTRUCTION }],
+  const model = env.GROQ_CHAT_MODEL || DEFAULT_CHAT_MODEL;
+  const text = await callGroq(env, model, [
+    {
+      role: 'system',
+      content: CHAT_SYSTEM_INSTRUCTION,
     },
-    contents,
-  });
+    ...chatTurns,
+  ]);
 
   return json({ text: text || "I'm sorry, I encountered an issue. Please try again." });
 };

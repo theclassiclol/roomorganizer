@@ -158,7 +158,7 @@ const App: React.FC = () => {
                 </div>
                 <div className="bg-stone-50 p-4 border-t border-stone-100 flex items-center justify-between">
                     <p className="text-xs text-stone-500">
-                        Tips provided by Gemini 3 Pro
+                        Tips provided by Groq AI
                     </p>
                     <button 
                         onClick={() => document.querySelector('.fixed.bottom-6')?.querySelector('button')?.click()}
