@@ -5,8 +5,12 @@ import { sendMessageToChat } from '../services/geminiService';
 import ReactMarkdown from 'react-markdown';
 import { LoadingSpinner } from './LoadingSpinner';
 
-export const ChatWidget: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+interface ChatWidgetProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const ChatWidget: React.FC<ChatWidgetProps> = ({ isOpen, onOpenChange }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -27,12 +31,6 @@ export const ChatWidget: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isOpen]);
-
-  useEffect(() => {
-    const handleOpenChat = () => setIsOpen(true);
-    window.addEventListener('roomorganizer:open-chat', handleOpenChat);
-    return () => window.removeEventListener('roomorganizer:open-chat', handleOpenChat);
-  }, []);
 
   const handleSendMessage = async () => {
     if (!inputText.trim() || isLoading) return;
@@ -82,7 +80,7 @@ export const ChatWidget: React.FC = () => {
   if (!isOpen) {
     return (
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => onOpenChange(true)}
         className="fixed bottom-6 right-6 bg-emerald-600 hover:bg-emerald-700 text-white p-4 rounded-full shadow-lg transition-all transform hover:scale-105 z-50 flex items-center gap-2"
         aria-label="Open Chat"
       >
@@ -101,7 +99,7 @@ export const ChatWidget: React.FC = () => {
             <h3 className="font-semibold">RoomOrganizer Assistant</h3>
         </div>
         <button 
-          onClick={() => setIsOpen(false)}
+          onClick={() => onOpenChange(false)}
           className="hover:bg-white/20 p-1 rounded-full transition-colors"
         >
           <X size={20} />

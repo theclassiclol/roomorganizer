@@ -16,6 +16,7 @@ const App: React.FC = () => {
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const handleAnalyze = async () => {
     if (!imageState.base64) return;
@@ -43,7 +44,7 @@ const App: React.FC = () => {
   };
 
   const openChatWidget = () => {
-    window.dispatchEvent(new Event('roomorganizer:open-chat'));
+    setIsChatOpen(true);
   };
 
   return (
@@ -189,7 +190,7 @@ const App: React.FC = () => {
         </div>
       </section>
 
-      <ChatWidget />
+      <ChatWidget isOpen={isChatOpen} onOpenChange={setIsChatOpen} />
     </div>
   );
 };
