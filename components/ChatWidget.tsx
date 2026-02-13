@@ -28,6 +28,12 @@ export const ChatWidget: React.FC = () => {
     scrollToBottom();
   }, [messages, isOpen]);
 
+  useEffect(() => {
+    const handleOpenChat = () => setIsOpen(true);
+    window.addEventListener('roomorganizer:open-chat', handleOpenChat);
+    return () => window.removeEventListener('roomorganizer:open-chat', handleOpenChat);
+  }, []);
+
   const handleSendMessage = async () => {
     if (!inputText.trim() || isLoading) return;
 

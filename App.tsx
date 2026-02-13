@@ -42,6 +42,10 @@ const App: React.FC = () => {
     setAnalysisResult(null);
   };
 
+  const openChatWidget = () => {
+    window.dispatchEvent(new Event('roomorganizer:open-chat'));
+  };
+
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 pb-24">
       {/* Header */}
@@ -53,7 +57,7 @@ const App: React.FC = () => {
             </div>
             <h1 className="text-xl font-bold tracking-tight text-stone-800">RoomOrganizer</h1>
           </div>
-          <a href="#" onClick={(e) => e.preventDefault()} className="text-sm font-medium text-stone-500 hover:text-emerald-600 transition-colors">
+          <a href="#about" className="text-sm font-medium text-stone-500 hover:text-emerald-600 transition-colors">
             About
           </a>
         </div>
@@ -162,7 +166,7 @@ const App: React.FC = () => {
                         Tips provided by Groq AI
                     </p>
                     <button 
-                        onClick={() => document.querySelector('.fixed.bottom-6')?.querySelector('button')?.click()}
+                        onClick={openChatWidget}
                         className="text-sm text-emerald-600 font-medium flex items-center gap-1 hover:underline"
                     >
                         Ask questions about this <ArrowRight size={14} />
@@ -174,6 +178,16 @@ const App: React.FC = () => {
 
         </div>
       </main>
+
+      <section id="about" className="max-w-5xl mx-auto px-4 sm:px-6 pb-8">
+        <div className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8">
+          <h3 className="text-xl font-bold text-stone-800 mb-2">About RoomOrganizer</h3>
+          <p className="text-stone-600">
+            RoomOrganizer helps you turn room photos into practical decluttering steps. Upload an image to get a plan,
+            then use the assistant to ask follow-up questions about layout, storage, and cleaning routines.
+          </p>
+        </div>
+      </section>
 
       <ChatWidget />
     </div>
