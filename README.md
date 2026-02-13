@@ -2,6 +2,11 @@
 
 RoomOrganizer is a React + Vite website where you can upload photos of your rooms and receive AI-powered organization and decluttering suggestions.
 
+## Open Source
+
+This project is open-source under the MIT License. See `LICENSE`.
+Contributions are welcome. See `CONTRIBUTING.md`.
+
 ## Local Development
 
 Prerequisites:
