@@ -30,7 +30,8 @@ const App: React.FC = () => {
         timestamp: Date.now()
       });
     } catch (error) {
-      alert("Something went wrong analyzing the image. Please check your connection and try again.");
+      const errorText = error instanceof Error ? error.message : "Something went wrong analyzing the image.";
+      alert(`Image analysis failed: ${errorText}`);
     } finally {
       setIsAnalyzing(false);
     }
