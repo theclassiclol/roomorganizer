@@ -10,7 +10,8 @@ export const analyzeRoomImage = async (base64Image: string): Promise<string> => 
   });
 
   if (!response.ok) {
-    throw new Error(`Analyze failed with status ${response.status}`);
+    const err = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err.error || `Analyze failed with status ${response.status}`);
   }
 
   const data = (await response.json()) as { text?: string };
@@ -30,7 +31,8 @@ export const sendMessageToChat = async (messages: ChatMessage[]): Promise<string
   });
 
   if (!response.ok) {
-    throw new Error(`Chat failed with status ${response.status}`);
+    const err = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err.error || `Chat failed with status ${response.status}`);
   }
 
   const data = (await response.json()) as { text?: string };

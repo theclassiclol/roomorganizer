@@ -130,6 +130,15 @@ const handleChat = async (request: Request, env: Env): Promise<Response> => {
     return json({ error: 'No valid messages provided' }, 400);
   }
 
+  // Gemini expects a user turn to start the conversation.
+  while (contents.length > 0 && contents[0].role !== 'user') {
+    contents.shift();
+  }
+
+  if (!contents.length) {
+    return json({ error: 'Conversation must include a user message' }, 400);
+  }
+
   const text = await callGemini(env, {
     system_instruction: {
       parts: [{ text: CHAT_SYSTEM_INSTRUCTION }],
@@ -154,7 +163,8 @@ export default {
       }
     } catch (error) {
       console.error('Worker API error:', error);
-      return json({ error: 'Internal server error' }, 500);
+      const message = error instanceof Error ? error.message : 'Internal server error';
+      return json({ error: message }, 500);
     }
 
     return env.ASSETS.fetch(request);
